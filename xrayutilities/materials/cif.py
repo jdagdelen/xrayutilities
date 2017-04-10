@@ -17,6 +17,7 @@
 
 import itertools
 import os
+import io
 import re
 import shlex
 import warnings
@@ -59,9 +60,32 @@ class CIFFile(object):
     structure are parsed from the CIF file
     """
 
-    def __init__(self, filename, digits=3):
+    def __init__(self, input, digits=3):
         """
         initialization of the CIFFile class
+
+        Parameters
+        ----------
+         input:  filename of the CIF file or string representation of the CIF file
+         digits:    number of digits to check if position is unique (optional)
+        """
+        self.digits = digits
+
+        if os.path.isfile(input):
+            self._from_file(input)
+        else:
+            self._from_string(input)
+
+    def __del__(self):
+        """
+        class destructor which closes open files
+        """
+        if self.fid is not None:
+            self.fid.close()
+
+    def _from_file(self, filename):
+        """
+        initializes the CIFFLIE class from a cif file
 
         Parameters
         ----------
@@ -70,7 +94,6 @@ class CIFFile(object):
         """
         self.name = os.path.splitext(os.path.split(filename)[-1])[0]
         self.filename = filename
-        self.digits = digits
 
         try:
             self.fid = open(self.filename, "rb")
@@ -80,12 +103,24 @@ class CIFFile(object):
         self.Parse()
         self.SymStruct()
 
-    def __del__(self):
+
+    def _from_string(self, string_representation):
         """
-        class destructor which closes open files
+        initializes the CIFFLIE class from a string representation of a cif file
+
+        Parameters
+        ----------
+         string_representation:  string representing contents of cif file
+         digits:    number of digits to check if position is unique (optional)
         """
-        if self.fid is not None:
-            self.fid.close()
+
+        try:
+            self.fid = io.StringIO(string_representation)
+        except:
+            raise IOError("string cannot be parsed into CIF file")
+
+        self.Parse()
+        self.SymStruct()
 
     def Parse(self):
         """
